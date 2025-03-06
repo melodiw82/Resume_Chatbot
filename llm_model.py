@@ -1,8 +1,10 @@
 from prompts import *
 
+from langchain.chains import ConversationChain
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
+from langchain_core.prompts.prompt import PromptTemplate
+from langchain_openai import ChatOpenAI
 import ast
 import PyPDF2
 from dotenv import load_dotenv
@@ -17,22 +19,40 @@ llm = ChatOpenAI(
     openai_api_key=openai_api_key
 )
 
-default_weights = {
-    "Main Technical Skills": 0.4,
-    "Soft Skills": 0.2,
-    "Experience": 0.3,
-    "Preferred Skills": 0.1
-}
+memory = ConversationBufferMemory(memory_key='history', return_messages=True)
 
-memory = ConversationBufferMemory()
+template = """
+You are a precise AI assistant specialized in resume analysis.
+Upon greeting the user, provide their average score along with individual section scores.
+Use the similarity analysis to answer questions, expanding where necessary while ensuring accuracy.
+Scoring breakdown:
+- Main Technical Skills: 40%
+- Soft Skills: 20%
+- Experience: 30%
+- Preferred Skills: 10%
+
+Current conversation:{history}
+Human: {input}
+"""
+
+prompt = PromptTemplate(input_variables=["history", "input"], template=template)
+
+chain = ConversationChain(
+    llm=llm,
+    memory=memory,
+    prompt=prompt,
+    verbose=True
+)
+
 
 def extract_resume_topics(resume_text: str):
     messages = [
-        SystemMessage(content=RESUME_EXTRACTION_PROMPT ),
+        SystemMessage(content=RESUME_EXTRACTION_PROMPT),
         HumanMessage(content=resume_text),
     ]
     response = llm.invoke(messages)
     return response.content
+
 
 def summarize_job_description(job_description: str):
     summarize_input = f"Job Description:\n{job_description}"
@@ -43,6 +63,7 @@ def summarize_job_description(job_description: str):
     response = llm.invoke(messages)
     return response.content
 
+
 def compare_similarity(resume_summary: str, summarized_job_description: str):
     comparison_input = f"Resume Summary:\n{resume_summary}\n\nJob Description:\n{summarized_job_description}"
     messages = [
@@ -52,6 +73,7 @@ def compare_similarity(resume_summary: str, summarized_job_description: str):
     response = llm.invoke(messages)
     return response.content
 
+
 def section_scoring(resume_similarity: str):
     section_input = f"Resume Similarity Dissimilarity:\n{resume_similarity}"
     messages = [
@@ -60,6 +82,7 @@ def section_scoring(resume_similarity: str):
     ]
     response = llm.invoke(messages)
     return response.content
+
 
 def compute_weighted_average(section_scores: str, weights: dict):
     available_weights = {section: weight for section, weight in weights.items() if section in section_scores}
@@ -75,6 +98,7 @@ def compute_weighted_average(section_scores: str, weights: dict):
     weighted_sum = sum(section_scores[section] * normalized_weights[section] for section in normalized_weights)
     return weighted_sum
 
+
 def extract_text_from_pdf(pdf_path):
     text = ""
     with open(pdf_path, "rb") as f:
@@ -83,21 +107,16 @@ def extract_text_from_pdf(pdf_path):
             text += page.extract_text() + "\n"
     return text
 
+
 def chatbot():
     while True:
         user_input = input("> ").strip()
         if user_input.lower() == "exit":
             break
 
-        past_data = memory.load_memory_variables({}).get("history", "")
-        messages = [
-            SystemMessage(content="""You are a concise and precise AI assistant specialized in resume analysis.  
-            Upon welcoming the user, provide their average score and individual section scores.  
-            Answer additional questions based on similarity analysis and expand on them if necessary since they are just a summary, ensuring responses are accurate and derived only from the provided data."""),
-            HumanMessage(content=f"Past Data:\n{past_data}\n\nUser Question: {user_input}"),
-        ]
-        response = llm.invoke(messages)
-        print(f"AI: {response.content}")
+        response = chain.predict(input=user_input)
+        print(f"AI: {response}")
+
 
 def main_func(pdf_path: str, job_description: str) -> dict:
     resume_text = extract_text_from_pdf(pdf_path)
@@ -106,7 +125,12 @@ def main_func(pdf_path: str, job_description: str) -> dict:
     similarity_analysis = compare_similarity(resume_summary, summarized_job_description)
     section_scores = section_scoring(similarity_analysis)
 
-    weighted_score = compute_weighted_average(section_scores, default_weights)
+    weighted_score = compute_weighted_average(section_scores, {
+        "Main Technical Skills": 0.4,
+        "Soft Skills": 0.2,
+        "Experience": 0.3,
+        "Preferred Skills": 0.1
+    })
 
     memory.save_context(
         {"input": "Resume Analysis"},
@@ -117,12 +141,10 @@ def main_func(pdf_path: str, job_description: str) -> dict:
         }
     )
 
-    result = {
+    return {
         "Resume Summary": resume_summary,
         "Similarity Analysis": similarity_analysis,
         "Section Scores": section_scores,
         "Weighted Score": weighted_score,
         "Summarized Job Description": summarized_job_description,
     }
-
-    return  result
