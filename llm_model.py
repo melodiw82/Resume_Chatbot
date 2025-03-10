@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts.prompt import PromptTemplate
 from langchain_openai import ChatOpenAI
+from langchain_cohere import ChatCohere
 import ast
 import PyPDF2
 from dotenv import load_dotenv
@@ -19,21 +20,39 @@ llm = ChatOpenAI(
     openai_api_key=openai_api_key
 )
 
+relevance_llm = ChatOpenAI(
+    model_name="gpt-4o-mini",
+    temperature=0,
+    openai_api_key=openai_api_key
+)
+
+# cohere_api_key = os.getenv("COHERE_API_KEY")
+# llm = ChatCohere(
+#     temperature=0,
+#     cohere_api_key=cohere_api_key
+# )
+
 memory = ConversationBufferMemory(memory_key='history', return_messages=True)
 
 template = """
 You are a precise AI assistant specialized in resume analysis.
 Upon greeting the user, provide their average score along with individual section scores.
-Use the similarity analysis to answer questions, expanding where necessary while ensuring accuracy.
+Use the similarity analysis and summarized job description to answer questions, expanding where necessary while ensuring accuracy.
 Scoring breakdown:
 - Main Technical Skills: 40%
 - Soft Skills: 20%
 - Experience: 30%
 - Preferred Skills: 10%
+You can answer questions about skills mentioned in job description, use your own knowledge in cases where the skill wasn't specifically mentioned, but might or might not be useful.
+If a user asked about a certain technology or advice, provide insight while keeping their resume summary and job description in mind. 
 
+If a question is irrelevant to resume analysis or job-seeking, gently decline to offer because it's not in your area of expertise.
 Current conversation:{history}
 Human: {input}
 """
+
+# FIXME checking the input or checking if output is related using CoT is not helpful cause it does not know the context of the chat.
+# FIXME CoT and few-shot prompting
 
 prompt = PromptTemplate(input_variables=["history", "input"], template=template)
 
@@ -108,14 +127,41 @@ def extract_text_from_pdf(pdf_path):
     return text
 
 
+def check_completeness(resume_text: str):
+    resume_text = f"Resume Text:\n{resume_text}"
+    messages = [
+        SystemMessage(content=CHECK_COMPLETENESS),
+        HumanMessage(content=resume_text),
+    ]
+    response = llm.invoke(messages)
+    return response.content
+
+
+# def check_question_relevance(question):
+#     response = relevance_llm.invoke([
+#         {"role": "system", "content": relevance_instructions},
+#         {"role": "user", "content": question}
+#     ])
+#
+#     content = response.content.lower()
+#     return content
+
+# If the score was low and close to 40 or less, limit the response token. or put stop at "\n"
 def chatbot():
     while True:
         user_input = input("> ").strip()
         if user_input.lower() == "exit":
             break
 
+        # content = check_question_relevance(user_input)
+        # print(content)
+        # content = ast.literal_eval(content)
+        # if "true" in content["relevant"].lower():
         response = chain.predict(input=user_input)
         print(f"AI: {response}")
+        # else:
+        #     response = "I apologize, but this question is not within my area of expertise."
+        #     print(f"AI: {response}")
 
 
 def main_func(pdf_path: str, job_description: str) -> dict:
@@ -124,6 +170,7 @@ def main_func(pdf_path: str, job_description: str) -> dict:
     summarized_job_description = summarize_job_description(job_description)
     similarity_analysis = compare_similarity(resume_summary, summarized_job_description)
     section_scores = section_scoring(similarity_analysis)
+    completeness = check_completeness(resume_text)
 
     weighted_score = compute_weighted_average(section_scores, {
         "Main Technical Skills": 0.4,
@@ -135,7 +182,9 @@ def main_func(pdf_path: str, job_description: str) -> dict:
     memory.save_context(
         {"input": "Resume Analysis"},
         {
-            "output": f"Similarity Analysis: {similarity_analysis}\n"
+            "output": f"Resume Summary: {resume_summary}\n"
+                      f"Job Description:{summarized_job_description}\n"
+                      f"Similarity Analysis: {similarity_analysis}\n"
                       f"Section Scoring: {section_scores}\n"
                       f"Weighted Score: {weighted_score}"
         }
@@ -147,4 +196,5 @@ def main_func(pdf_path: str, job_description: str) -> dict:
         "Section Scores": section_scores,
         "Weighted Score": weighted_score,
         "Summarized Job Description": summarized_job_description,
+        "Completeness": completeness
     }

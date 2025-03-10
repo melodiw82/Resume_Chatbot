@@ -20,5 +20,8 @@ if __name__ == "__main__":
     print("\nWeighted Score:")
     print(results["Weighted Score"])
 
+    print("\nCompleteness:")
+    print(results["Completeness"])
+
     if results:
         chatbot()

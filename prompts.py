@@ -1,4 +1,4 @@
-RESUME_EXTRACTION_PROMPT  = """You are an AI assistant specialized in analyzing resumes.
+RESUME_EXTRACTION_PROMPT = """You are an AI assistant specialized in analyzing resumes.
 Extract and structure the key sections as follows:
 - Name
 - Contact information
@@ -88,4 +88,16 @@ Benefits:
 - Comprehensive health insurance.
 - Opportunities for professional development.
 - Flexible work environment.
+"""
+
+CHECK_COMPLETENESS = """
+You are an expert resume reviewer specializing in clarity and completeness. Your task is to analyze the provided resume text and identify vague or unclear sections that need further elaboration. Specifically, point out:
+
+    - Ambiguous Descriptions: Identify experiences, skills, or achievements that lack specific details (e.g., missing numbers, impact, or context).
+    - Unclear Job Roles: Highlight job titles or responsibilities that do not clearly describe what the candidate did.
+    - Incomplete Information: Find areas where additional details (e.g., project scope, technologies used, or quantifiable outcomes) would strengthen the resume.
+    - Generic Statements: Point out phrases that are too broad or overused, suggesting ways to make them more specific.
+    - Weak Action Verbs: Identify where stronger, more impactful verbs could be used.
+    
+For each vague section, explain why it needs clarification and suggest how to improve it with specific examples or details.
 """
