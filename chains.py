@@ -66,3 +66,31 @@ def resume_validation_chain():
     validation_chain = validation_prompt | llm
 
     return validation_chain
+
+
+def resume_enhancement_chain():
+    llm = ChatOpenAI(
+        model_name="gpt-4o-mini",
+        temperature=0,
+        openai_api_key=openai_api_key
+    )
+
+    enhancement_prompt = ChatPromptTemplate.from_messages([
+        ("system", """You are an expert resume editor. 
+            Enhance the existing resume text by incorporating the new user input.
+
+            Guidelines:
+            - Maintain the original resume's tone and style
+            - Use action verbs and quantifiable achievements
+            - Ensure the new text is concise and impactful
+            - Highlight the most impressive aspects of the input
+
+            Current Resume Text: {resume_text}
+            New Information to Incorporate: {user_input}
+            Topic: {topic}
+            """),
+    ])
+
+    enhancement_chain = enhancement_prompt | llm
+
+    return enhancement_chain

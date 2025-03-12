@@ -9,10 +9,9 @@ import ast
 import json
 
 
-# FIXME This is a demo of project that works, but not well.
-#  1.AMBIGUITY_PROMPT should be improved to have parts of resume that contains ambiguity.
-#  2. Chat history is not necessary in this context since it asks questions based on history, but they are not related.
-#  3. Another chain should be added to improve user's resume based on their ACCEPTED answer.
+# FIXME
+#  1. AMBIGUITY_PROMPT should be improved to have parts of resume that contains ambiguity. (CHECK)
+#  2. Chat history is not necessary in this context since it asks questions based on history, but they are not related. (CHECK)
 
 class ResumeChatMemory:
     def __init__(self):
@@ -34,11 +33,16 @@ def ai_ask(ambiguity_str: str):
     ambiguity_dict = ast.literal_eval(ambiguity_str)
     question_chain = resume_improvement_chain()
     validation_chain = resume_validation_chain()
+    enhancement_chain = resume_enhancement_chain()
 
     memory = ResumeChatMemory()
 
-    questions = {}
-    for topic, description in ambiguity_dict.items():
+    enhanced_resume = {}
+    for topic, details in ambiguity_dict.items():
+        for entry in details:
+            description = entry["description"]
+            resume_text = entry["resume_text"]
+
         response = question_chain.invoke({
             "topic": topic,
             "description": description,
@@ -46,7 +50,7 @@ def ai_ask(ambiguity_str: str):
         })
 
         asked_question = response.content
-        memory.add_ai_question(topic, asked_question)
+        # memory.add_ai_question(topic, asked_question)
 
         while True:
             print(f"\n{asked_question}")
@@ -61,13 +65,23 @@ def ai_ask(ambiguity_str: str):
             print(validation_response.content)
 
             if "ACCEPT" in validation_response.content:
-                memory.add_human_response(user_input)
-                questions[topic] = user_input
+                # memory.add_human_response(user_input)
+                enhancement_response = enhancement_chain.invoke({
+                    "resume_text": resume_text,
+                    "user_input": user_input,
+                    "topic": topic
+                })
+
+                enhanced_resume[topic] = {
+                    "original": resume_text,
+                    "enhanced": enhancement_response.content
+                }
+
+                print("\nEnhanced:")
+                print(enhancement_response.content)
                 break
             else:
                 print("Please provide a more relevant response.")
-
-    print(json.dumps(questions, indent=2))
 
 
 def main_func(pdf_path: str, job_description: str) -> dict:
@@ -75,13 +89,38 @@ def main_func(pdf_path: str, job_description: str) -> dict:
     # summarized_job_description = summarize_job_description(job_description)
     # ambiguity_str = check_ambiguity(resume_text, summarized_job_description)
     ambiguity_str = """{
-        "Main Technical Skills": "SQL and Python are mentioned, but R is not included. If experienced with R, add it; otherwise, consider learning it.",
-        "Data Visualization Tools": "Power BI is listed, but Tableau is not mentioned. If familiar with Tableau, include that experience; if not, consider gaining basic knowledge.",
-        "Experience Alignment": "The resume states a B.S. in Computer Engineering, which is not directly in Data Science. Emphasize any relevant coursework or projects that align with data analysis and visualization.",
-        "Data Analysis Experience": "The resume mentions data analysis in projects but lacks specific examples of data analysis tasks or methodologies used. Include more details on data analysis experiences.",
-        "Soft Skills": "Soft skills are mentioned but lack specific examples. Provide instances demonstrating detail orientation, analytical skills, and collaboration in team settings.",
-        "Communication Skills": "While communication is listed as a soft skill, there are no specific examples of how these skills were applied in teaching or teamwork. Include examples of effective communication in your roles."
-    }"""
+  "Soft Skills": [
+    {
+      "description": "Soft skills are mentioned but lack specific examples of how they were applied in projects or work experience.",
+      "resume_text": "Soft Skills: Problem-solving, Time Management, Adaptability, Communication (English)"
+    }
+  ],
+  "Experience": [
+    {
+      "description": "Experience in data analysis is not explicitly highlighted. The internship covers data science, but specific analytical tasks related to business insights or reporting are missing.",
+      "resume_text": "Intern - Data Science Task-Oriented Bootcamp: Demonstrated proficiency in Python, SQL, deep learning and machine learning algorithms, linear algebra, data visualization using Power BI, and probability and statistics."
+    }
+  ],
+  "Projects": [
+    {
+      "description": "Projects involve data analysis but do not specify key outcomes, metrics, or business impact. A more direct connection to decision-making insights would strengthen alignment.",
+      "resume_text": "Phone Analysis - GSMarena Website: Analyzed smartphone specs from GSMarena for market trends, brand preferences, and tech advancements."
+    }
+  ],
+  "Data Visualization": [
+    {
+      "description": "Experience with Power BI is mentioned, but no specific dashboard creation or stakeholder reporting is detailed.",
+      "resume_text": "Skills: Tools & Technologies - Power BI"
+    }
+  ],
+  "Communication": [
+    {
+      "description": "While communication is listed as a skill, there are no examples of written reports, presentations, or stakeholder interactions.",
+      "resume_text": "Soft Skills: Communication (English)"
+    }
+  ]
+}
+"""
     ai_ask(ambiguity_str)
 
     return {

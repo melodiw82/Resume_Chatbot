@@ -100,14 +100,15 @@ If the resume lacks key details from the job description, highlight those gaps a
 Analyze the resume and identify areas where it could be more precise in aligning with the job description. Focus on skills, experience, and qualifications that are mentioned in both documents. Highlight sections that need more clarity or specificity.
 
 Respond in a valid JSON object, following this pattern for example:
+
 {
-  "Industry Experience": "No direct Data Analyst experience. Highlight real-world tasks from projects or bootcamp.",
-  "SQL Proficiency": "SQL skills not detailed. Mention queries, database management, or large datasets.",
-  "Data Visualization": "Only lists Power BI; job asks for Tableau. Add Tableau if experienced or learn basics.",
-  "Communication Skills": "No specific examples. Show explaining insights or teamwork.",
-  "Education Relevance": "Degree in Computer Engineering, not Data Science. Highlight relevant courses and projects."
+  "Projects": [
+    {
+      "description": "Projects involve data analysis but do not specify key outcomes, metrics, or business impact. A more direct connection to decision-making insights would strengthen alignment.",
+      "resume_text": "Phone Analysis - GSMarena Website: Analyzed smartphone specs from GSMarena for market trends, brand preferences, and tech advancements."
+    }
+  ]
 }
 
 Keys may vary based on things mentioned in resume.
-Summarize the values like the example.
 """
