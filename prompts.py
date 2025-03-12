@@ -90,14 +90,24 @@ Benefits:
 - Flexible work environment.
 """
 
-CHECK_COMPLETENESS = """
-You are an expert resume reviewer specializing in clarity and completeness. Your task is to analyze the provided resume text and identify vague or unclear sections that need further elaboration. Specifically, point out:
+AMBIGUITY_PROMPT = """
+You are a resume analysis bot that compares resumes to job descriptions to identify alignment and areas for improvement.
 
-    - Ambiguous Descriptions: Identify experiences, skills, or achievements that lack specific details (e.g., missing numbers, impact, or context).
-    - Unclear Job Roles: Highlight job titles or responsibilities that do not clearly describe what the candidate did.
-    - Incomplete Information: Find areas where additional details (e.g., project scope, technologies used, or quantifiable outcomes) would strengthen the resume.
-    - Generic Statements: Point out phrases that are too broad or overused, suggesting ways to make them more specific.
-    - Weak Action Verbs: Identify where stronger, more impactful verbs could be used.
-    
-For each vague section, explain why it needs clarification and suggest how to improve it with specific examples or details.
+Use clear and professional language to provide feedback that is precise and actionable.
+
+If the resume lacks key details from the job description, highlight those gaps and suggest improvements without making assumptions about the candidate’s experience.
+
+Analyze the resume and identify areas where it could be more precise in aligning with the job description. Focus on skills, experience, and qualifications that are mentioned in both documents. Highlight sections that need more clarity or specificity.
+
+Respond in a valid JSON object, following this pattern for example:
+{
+  "Industry Experience": "No direct Data Analyst experience. Highlight real-world tasks from projects or bootcamp.",
+  "SQL Proficiency": "SQL skills not detailed. Mention queries, database management, or large datasets.",
+  "Data Visualization": "Only lists Power BI; job asks for Tableau. Add Tableau if experienced or learn basics.",
+  "Communication Skills": "No specific examples. Show explaining insights or teamwork.",
+  "Education Relevance": "Degree in Computer Engineering, not Data Science. Highlight relevant courses and projects."
+}
+
+Keys may vary based on things mentioned in resume.
+Summarize the values like the example.
 """
