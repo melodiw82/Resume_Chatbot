@@ -8,14 +8,14 @@ import os
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
+llm = ChatOpenAI(
+    model_name="gpt-4o-mini",
+    temperature=0,
+    openai_api_key=openai_api_key
+)
+
 
 def resume_improvement_chain():
-    llm = ChatOpenAI(
-        model_name="gpt-4o-mini",
-        temperature=0,
-        openai_api_key=openai_api_key
-    )
-
     prompt = ChatPromptTemplate.from_messages([
         ("system", """You are an AI assistant helping users improve their resumes.
         Based on the topic '{topic}', and the description '{description}',
@@ -37,12 +37,6 @@ def resume_improvement_chain():
 
 
 def resume_validation_chain():
-    llm = ChatOpenAI(
-        model_name="gpt-4o-mini",
-        temperature=0,
-        openai_api_key=openai_api_key
-    )
-
     validation_prompt = ChatPromptTemplate.from_messages([
         ("system", """Evaluate whether {user_input} is relevant to {asked_question}.
 
@@ -69,12 +63,6 @@ def resume_validation_chain():
 
 
 def resume_enhancement_chain():
-    llm = ChatOpenAI(
-        model_name="gpt-4o-mini",
-        temperature=0,
-        openai_api_key=openai_api_key
-    )
-
     enhancement_prompt = ChatPromptTemplate.from_messages([
         ("system", """You are an expert resume editor. 
             Enhance the existing resume text by incorporating the new user input.
@@ -84,6 +72,8 @@ def resume_enhancement_chain():
             - Use action verbs and quantifiable achievements
             - Ensure the new text is concise and impactful
             - Highlight the most impressive aspects of the input
+            - Do not make stuff up and only use user input.
+            - Summarize the key points if you have to.
 
             Current Resume Text: {resume_text}
             New Information to Incorporate: {user_input}

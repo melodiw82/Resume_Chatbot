@@ -9,10 +9,6 @@ import ast
 import json
 
 
-# FIXME
-#  1. AMBIGUITY_PROMPT should be improved to have parts of resume that contains ambiguity. (CHECK)
-#  2. Chat history is not necessary in this context since it asks questions based on history, but they are not related. (CHECK)
-
 class ResumeChatMemory:
     def __init__(self):
         self.chat_history = ChatMessageHistory()
@@ -82,6 +78,8 @@ def ai_ask(ambiguity_str: str):
                 break
             else:
                 print("Please provide a more relevant response.")
+
+    return enhanced_resume
 
 
 def main_func(pdf_path: str, job_description: str) -> dict:
